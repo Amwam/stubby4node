@@ -20,6 +20,7 @@ function Endpoint(endpoint, datadir) {
 Endpoint.prototype.matches = function (request) {
   var file, post, upperMethods;
   var matches = {};
+  var isJSONRequest = ((request.headers || {})['content-type'] || '').indexOf('json') > -1;
 
   matches.url = matchRegex(this.request.url, request.url);
   if (!matches.url) { return null; }
@@ -38,8 +39,21 @@ Endpoint.prototype.matches = function (request) {
   }
 
   post = file || this.request.post;
+
   if (post && request.post) {
-    matches.post = matchRegex(normalizeEOL(post), normalizeEOL(request.post));
+    if (typeof request.post === 'string' && typeof this.request.post === 'object') {
+      if (isJSONRequest) {
+        request.post = JSON.parse(request.post);
+      } else {
+        request.post = q.decode(request.post);
+      }
+    }
+
+    if (typeof post === 'string') {
+      matches.post = matchRegex(normalizeEOL(post), normalizeEOL(request.post));
+    } else {
+      matches.post = compareHashMaps(post, request.post);
+    }
     if (!matches.post) { return null; }
   }
 
@@ -199,7 +213,12 @@ function compareHashMaps(configured, incoming) {
 
   for (key in configured) {
     if (!configured.hasOwnProperty(key)) { continue; }
-    headers[key] = matchRegex(configured[key], incoming[key]);
+
+    if (typeof configured[key] !== 'string') {
+      headers[key] = compareHashMaps(configured[key], incoming[key]);
+    } else {
+      headers[key] = matchRegex(configured[key], incoming[key]);
+    }
     if (!headers[key]) { return null; }
   }
 

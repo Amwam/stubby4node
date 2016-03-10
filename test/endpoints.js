@@ -312,6 +312,100 @@ describe('Endpoints', function () {
 
           assert(callback.calledWith(null));
         });
+
+        it('should match response with form params', function () {
+          var expected = {
+            status: 200
+          };
+          sut.create({
+            request: {
+              url: '/testing',
+              post: {email: 'name@mail.com', var2: 'val2'},
+              method: 'post'
+            },
+            response: expected
+          });
+          data = {
+            url: '/testing',
+            post: 'email=name%40mail.com&var2=val2',
+            method: 'POST'
+          };
+          sut.find(data, callback);
+
+          assert(callback.calledWith(null));
+        });
+
+        it('should match response with json params', function () {
+          var expected = {
+            status: 200
+          };
+          sut.create({
+            request: {
+              url: '/testing',
+              post: {var1: 'val1', var2: 'val2'},
+              method: 'post'
+            },
+            response: expected
+          });
+          data = {
+            url: '/testing',
+            post: '{"var1": "val1", "var2": "val2", "var3": "val3"}',
+            headers: {
+              'content-type': 'application/json'
+            },
+            method: 'POST'
+          };
+          sut.find(data, callback);
+
+          assert(callback.calledWith(null));
+        });
+
+        it('should match response with multi level json params', function () {
+          var expected = {
+            status: 200
+          };
+          sut.create({
+            request: {
+              url: '/testing',
+              post: {var1: 'val1', var2: 'val2', var3: {var4: 'val4'}},
+              method: 'post'
+            },
+            response: expected
+          });
+          data = {
+            url: '/testing',
+            post: '{"var1": "val1", "var2": "val2", "var3": {"var4": "val4", "var5": "val5"}}',
+            headers: {
+              'content-type': 'application/json'
+            },
+            method: 'POST'
+          };
+          sut.find(data, callback);
+
+          assert(callback.calledWith(null));
+        });
+
+        it('should not match response with form params, if params not supplied', function () {
+          var expected = {
+            status: 200
+          };
+          sut.create({
+            request: {
+              url: '/testing',
+              post: {var1: 'val1', var2: 'val2'},
+              method: 'post'
+            },
+            response: expected
+          });
+          data = {
+            url: '/testing',
+            post: {var3: 'val3'},
+            method: 'POST'
+          };
+          sut.find(data, callback);
+
+          assert(callback.calledWith("Endpoint with given request doesn't exist."));
+        });
       });
 
       describe('response body versus file', function () {
